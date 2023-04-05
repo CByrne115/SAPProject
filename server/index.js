@@ -18,8 +18,8 @@ app.use(express.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser());
 
-//const bcrypt = require('bcrypt')
-//const saltRounds = 10
+const bcrypt = require('bcrypt')
+const saltRounds = 10
 
 
 app.use(
@@ -122,14 +122,14 @@ app.post('/api/login/register', (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
 
-   // bcrypt.hash(password, saltRounds, (err, hash) => {
-    //   if (err) {
-    //      console.log(err);
-    //   }
+   bcrypt.hash(password, saltRounds, (err, hash) => {
+      if (err) {
+         console.log(err);
+   }
 
         db.query(
             'INSERT INTO login (username, password) VALUES (?, ?)',
-            [username, password],  //change pw to hash
+            [username, hash], 
             (err, result) => {
                 if (err) {
                     console.log(err);
@@ -140,7 +140,7 @@ app.post('/api/login/register', (req, res) => {
                 }
             }
         );
-    //})
+    })
 });
 
 app.get('/api/login/login', (req, res) => {
@@ -164,7 +164,7 @@ app.post('/api/login/login', (req, res) => {
             }
 
             if (result.length > 0) {
-                //bcrypt.compare(password, result[0].password, (error, response) => {
+                bcrypt.compare(password, result[0].password, (error, response) => {
                     if (response) {
                         req.session.user = result;
                         console.log(req.session.user);
@@ -172,7 +172,7 @@ app.post('/api/login/login', (req, res) => {
                     } else {
                         res.send({ message: "Wrong username/password combination!" });
                     }
-               // });
+               });
             } else {
                 res.send({ message: "User doesn't exist" });
             }
