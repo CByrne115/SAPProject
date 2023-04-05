@@ -18,8 +18,8 @@ app.use(express.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser());
 
-//const bcrypt = require('bcrypt')
-//const saltRounds = 10
+const bcrypt = require('bcrypt')
+const saltRounds = 10
 
 
 app.use(
@@ -39,7 +39,7 @@ app.use(
         resave: false,
         saveUninitialized: false,
         cookie: {
-            expires: 60 * 60 * 48,
+            expires: 60 * 60 * 12,
         },
     })
 );
@@ -118,30 +118,36 @@ app.put("/api/update/password", (req, res) => {
     });
 });
 
-app.post('/api/login/register', (req, res) => {
-    const username = req.body.username;
-    const password = req.body.password;
-
-   // bcrypt.hash(password, saltRounds, (err, hash) => {
-    //   if (err) {
-    //      console.log(err);
-    //   }
-
-        db.query(
-            'INSERT INTO login (username, password) VALUES (?, ?)',
-            [username, password],  //change pw to hash
-            (err, result) => {
-                if (err) {
+    app.post('/api/login/register', (req, res) => {
+        const username = req.body.username;
+        const password = req.body.password;
+    
+        bcrypt.genSalt(saltRounds, (err, salt) => {
+            if (err) {
+              console.log(err);
+            }
+            bcrypt.hash(password, salt, (err, hash) => {
+              if (err) {
+                console.log(err);
+              }
+    
+              db.query(
+                'INSERT INTO login (username, password) VALUES (?, ?)',
+                [username, hash],
+                (err, result) => {
+                  if (err) {
                     console.log(err);
                     res.status(500).send('Internal Server Error');
-                } else {
+                  } else {
                     console.log(result);
                     res.status(200).send('User registered successfully');
+                  }
                 }
-            }
-        );
-    //})
-});
+              );
+            });
+        });
+    });
+    
 
 app.get('/api/login/login', (req, res) => {
     if (req.session.user) {
@@ -164,7 +170,7 @@ app.post('/api/login/login', (req, res) => {
             }
 
             if (result.length > 0) {
-                //bcrypt.compare(password, result[0].password, (error, response) => {
+                bcrypt.compare(password, result[0].password, (error, response) => {
                     if (response) {
                         req.session.user = result;
                         console.log(req.session.user);
@@ -172,7 +178,7 @@ app.post('/api/login/login', (req, res) => {
                     } else {
                         res.send({ message: "Wrong username/password combination!" });
                     }
-               // });
+                });
             } else {
                 res.send({ message: "User doesn't exist" });
             }
